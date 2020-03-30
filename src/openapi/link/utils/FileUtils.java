@@ -1,6 +1,7 @@
 package openapi.link.utils;
 
 import java.io.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Author: weiqiang
@@ -8,13 +9,13 @@ import java.io.*;
  */
 @SuppressWarnings("all")
 public class FileUtils {
+    private static ReentrantLock lock = new ReentrantLock();
 
     private FileUtils() {
     }
 
-
     public static String createFile(String fileName) {
-        File testFile = new File("./file", fileName+"_wq");
+        File testFile = new File("./file/", fileName + "_wq");
         try {
             if (!testFile.exists())
                 testFile.createNewFile();

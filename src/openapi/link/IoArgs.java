@@ -17,11 +17,13 @@ public class IoArgs {
 
     public int read(SocketChannel channel) {
         str = "";
+        int read = 0;
+        int total = 0;
         try {
             while (true) {
                 byteBuffer.clear();
-                int read = 0;
                 read = channel.read(byteBuffer);
+                total += read;
                 if (read <= 0)
                     break;
                 str += new String(bytes, 0, read);
@@ -29,7 +31,7 @@ public class IoArgs {
         } catch (IOException e) {
             return -1;
         }
-        return 1;
+        return total;
     }
 
     public void write(SocketChannel channel, String str) throws IOException {
@@ -61,10 +63,10 @@ public class IoArgs {
 
         if (finish2 != -2 && finish2 < finish1)
             finish1 = finish2;
-        int start = str.indexOf("/");
-        if (start == -1 || finish1 == -2 || finish1 <= start) {
+        int start = str.lastIndexOf("/",finish1);
+        if (start == 0 || finish1 == -2 || finish1 < start) {
             return "null";
         }
-        return str.substring(start, finish1);
+        return str.substring(start, finish1).replace("/","_");
     }
 }

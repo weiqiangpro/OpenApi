@@ -46,9 +46,7 @@ public class MySocketChannel implements Closeable {
                 IoArgs args = MySocketChannel.this.ioArgs;
                 int read = args.read(channel);
                 if (read <= 0) {
-                    log.info("wrong");
-                    startSend("wrong");
-                    CloseUtil.close(MySocketChannel.this);
+                    startSend(FileUtils.createFile("wrong"));
                     return;
                 }
                 startSend(FileUtils.createFile(args.fileName()));
@@ -69,6 +67,7 @@ public class MySocketChannel implements Closeable {
     private void startSend(String file) {
         outputCallback.setStr(file);
         outputHandel.execute(outputCallback);
+//        outputCallback.run();
     }
 
     private final HandleOutputCallback outputCallback = new HandleOutputCallback() {
