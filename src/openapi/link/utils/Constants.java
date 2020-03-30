@@ -11,8 +11,8 @@ public class Constants {
     public static int OUTPUT_POOL_SIZE_MIN = 16;
     public static int OUTPUT_POOL_SIZE_MAX = 32;
 
-    public static int INPUT_POOL_SIZE_MIN = 16;
-    public static int INPUT_POOL_SIZE_MAX = 32;
+    public static int INPUT_POOL_SIZE_MIN = 32;
+    public static int INPUT_POOL_SIZE_MAX = 64;
 
     public static int IOAEGS_EXCUTOR_SIZE = 1000;
 
