@@ -9,7 +9,6 @@ import openapi.link.utils.FileUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
