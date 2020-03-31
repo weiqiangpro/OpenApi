@@ -63,12 +63,12 @@ public class TcpServer {
                         if (done)
                             break;
                         SelectionKey next = iterator.next();
-                        iterator.remove();
                         if (next.isAcceptable()) {
                             ServerSocketChannel serverSocketChannel = (ServerSocketChannel) next.channel();
                             SocketChannel socketChannel = serverSocketChannel.accept();
                             Context.get().getIoProvider().registerInput(socketChannel);
                         }
+                        iterator.remove();
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

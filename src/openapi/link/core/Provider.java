@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -21,25 +22,24 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class Provider implements IoProvider {
     private final AtomicBoolean isClosed = new AtomicBoolean(false);
-    private final ReentrantLock lock = new ReentrantLock();
     private final AtomicBoolean inRegIn = new AtomicBoolean(false);
 
     private final Selector readSelector;
 
-    private final ExecutorService inputHandel ;
+    private final ExecutorService inputHandel;
     private final ExecutorService outputHandel;
 
     public Provider() throws IOException {
         inputHandel = new ThreadPoolExecutor(Constants.INPUT_POOL_SIZE_MIN
                 , Constants.INPUT_POOL_SIZE_MAX
-                ,10
-                ,TimeUnit.SECONDS
-                ,new LinkedBlockingDeque<>());
+                , 10
+                , TimeUnit.SECONDS
+                , new LinkedBlockingDeque<>());
         outputHandel = new ThreadPoolExecutor(Constants.OUTPUT_POOL_SIZE_MIN
                 , Constants.OUTPUT_POOL_SIZE_MAX
-                ,10
-                ,TimeUnit.SECONDS
-                ,new LinkedBlockingDeque<>());
+                , 10
+                , TimeUnit.SECONDS
+                , new LinkedBlockingDeque<>());
         this.readSelector = Selector.open();
         startRead();
     }
@@ -52,23 +52,22 @@ public class Provider implements IoProvider {
 
                     try {
                         if (readSelector.select() == 0) {
-                            waitSelection(inRegIn);
+                            waitSelection();
                             continue;
                         }
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    lock.lock();
-                        Set<SelectionKey> selectionKeys = readSelector.selectedKeys();
-                        for (SelectionKey selectionKey : selectionKeys) {
-                            if (selectionKey.isReadable()) {
-                                selectionKey.cancel();
-                                SocketChannel channel = (SocketChannel) selectionKey.channel();
-                                new MySocketChannel(channel, inputHandel, outputHandel);
-                            }
+                    Set<SelectionKey> selectionKeys = readSelector.selectedKeys();
+                    for (SelectionKey selectionKey : selectionKeys) {
+                        if (selectionKey.isReadable()) {
+                            selectionKey.cancel();
+                            readSelector.wakeup();
+                            SocketChannel channel = (SocketChannel) selectionKey.channel();
+                            new MySocketChannel(channel, inputHandel, outputHandel);
                         }
-                        selectionKeys.clear();
-                        lock.unlock();
+                    }
+                    selectionKeys.clear();
                 }
             }
         };
@@ -78,36 +77,34 @@ public class Provider implements IoProvider {
 
 
     public void registerInput(SocketChannel channel) {
-        lock.lock();
-        try {
-            inRegIn.set(true);
-            readSelector.wakeup();
-            channel.configureBlocking(false);
-            channel.register(readSelector, SelectionKey.OP_READ);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            inRegIn.set(false);
+        synchronized (inRegIn) {
             try {
-                inRegIn.notify();
-            } catch (Exception ignored) {
+                inRegIn.set(true);
+                readSelector.wakeup();
+                channel.configureBlocking(false);
+                channel.register(readSelector, SelectionKey.OP_READ);
+            } catch (Exception e) {
+                e.printStackTrace();
             } finally {
-                lock.unlock();
+                inRegIn.set(false);
+                try {
+                    inRegIn.notify();
+                } catch (Exception ignored) {
+                }
             }
         }
     }
 
 
-    private void waitSelection(AtomicBoolean locker) {
-        lock.lock();
-        try {
-            if (locker.get())
-                locker.wait();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            lock.unlock();
+    private void waitSelection() {
+        synchronized (inRegIn) {
+            try {
+                if (inRegIn.get())
+                    inRegIn.wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
-    }
 
+    }
 }
